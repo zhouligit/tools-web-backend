@@ -1,10 +1,25 @@
-.PHONY: dev run build-asr install-asr build-api run-asr run-api
+# 确保 Homebrew / 官方 Go 在 PATH 中（make 有时继承不到完整 PATH）
+export PATH := /opt/homebrew/bin:/usr/local/bin:/usr/local/go/bin:$(PATH)
 
-dev:
-	go run ./cmd/server
+GO ?= go
 
-build-api:
-	go build -o bin/server ./cmd/server
+.PHONY: check-go dev run build-asr install-asr build-api run-asr run-api
+
+check-go:
+	@command -v $(GO) >/dev/null 2>&1 || { \
+		echo "未找到 Go。请先安装："; \
+		echo "  macOS:  brew install go"; \
+		echo "  Ubuntu: 见 deploy/ubuntu-baidu.md"; \
+		exit 1; \
+	}
+	@$(GO) version
+
+dev: check-go
+	$(GO) run ./cmd/server
+
+build-api: check-go
+	@mkdir -p bin
+	$(GO) build -o bin/server ./cmd/server
 
 run-api: build-api
 	./bin/server
