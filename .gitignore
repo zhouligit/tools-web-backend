@@ -1,0 +1,56 @@
+# ===== 编译产物 =====
+/bin/
+/server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# ===== 环境与密钥 =====
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ===== Go =====
+/vendor/
+go.work
+go.work.sum
+coverage.out
+coverage.html
+
+# ===== Python (asr-service) =====
+asr-service/.venv/
+asr-service/venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ===== 运行时临时文件 =====
+/tmp/
+*.log
+
+# ===== 操作系统 =====
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
