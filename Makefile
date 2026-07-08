@@ -10,8 +10,10 @@ else
 endif
 
 export PATH := /opt/homebrew/bin:/usr/local/bin:/usr/local/go/bin:$(PATH)
+export GOPROXY ?= https://goproxy.cn,direct
+export GOSUMDB ?= sum.golang.google.cn
 
-.PHONY: check-go dev install-asr build-api run-api run-asr
+.PHONY: check-go dev install-asr build-api run-api run-asr tidy
 
 check-go:
 	@test -x "$(GO)" || command -v "$(GO)" >/dev/null 2>&1 || { \
@@ -24,6 +26,9 @@ check-go:
 
 dev: check-go
 	@"$(GO)" run ./cmd/server
+
+tidy: check-go
+	@"$(GO)" mod tidy
 
 build-api: check-go
 	@mkdir -p bin
