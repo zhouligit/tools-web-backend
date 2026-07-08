@@ -159,6 +159,7 @@ WorkingDirectory=/opt/tools_web/tools-web-backend/asr-service
 Environment=WHISPER_MODEL=medium
 Environment=WHISPER_DEVICE=cpu
 Environment=WHISPER_COMPUTE_TYPE=int8
+Environment=HF_ENDPOINT=https://hf-mirror.com
 ExecStart=/opt/tools_web/tools-web-backend/asr-service/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 18081
 Restart=always
 RestartSec=5

@@ -1,7 +1,12 @@
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 import os
 import tempfile
+import traceback
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("tools-asr")
 
 app = FastAPI(title="tools-web-asr-service")
 
@@ -22,8 +27,14 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        from faster_whisper import WhisperModel
-        _model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type=COMPUTE_TYPE)
+        try:
+            from faster_whisper import WhisperModel
+            logger.info("loading whisper model=%s device=%s compute=%s", MODEL_SIZE, DEVICE, COMPUTE_TYPE)
+            _model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type=COMPUTE_TYPE)
+            logger.info("whisper model loaded")
+        except Exception as exc:
+            logger.error("failed to load whisper model: %s", exc)
+            raise
     return _model
 
 
@@ -67,5 +78,8 @@ async def transcribe(
             "text": "\n".join(texts),
             "segments": segments,
         }
+    except Exception as exc:
+        logger.error("transcribe failed: %s\n%s", exc, traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     finally:
         os.unlink(tmp_path)
