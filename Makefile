@@ -36,6 +36,6 @@ install-asr:
 	cd asr-service && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
 
 run-asr:
-	cd asr-service && . .venv/bin/activate && uvicorn main:app --host 127.0.0.1 --port 8090
+	cd asr-service && . .venv/bin/activate && uvicorn main:app --host 127.0.0.1 --port 18081
 
 # 本地联调：终端1 make run-asr，终端2 make dev

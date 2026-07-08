@@ -7,8 +7,8 @@
 ## 架构
 
 ```
-Frontend → Go API (:8080) → ffmpeg / yt-dlp
-                          → Python ASR (:8090, faster-whisper)
+Frontend → Go API (127.0.0.1:18080) → ffmpeg / yt-dlp
+                          → Python ASR (127.0.0.1:18081, faster-whisper)
                           → 百度云 BOS（可选）
 ```
 
@@ -98,7 +98,7 @@ POST /api/v1/tasks/media-to-text
 
 ```bash
 curl -F "file=@demo.mp4" -F "language=zh" \
-  http://localhost:8080/api/v1/tasks/media-to-text/upload
+  http://localhost:18080/api/v1/tasks/media-to-text/upload
 ```
 
 ## 百度云 BOS

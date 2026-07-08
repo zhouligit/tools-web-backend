@@ -29,10 +29,10 @@ type BOSConfig struct {
 func Load() Config {
 	maxMB, _ := strconv.ParseInt(getEnv("MAX_UPLOAD_MB", "500"), 10, 64)
 	return Config{
-		Addr:           getEnv("ADDR", ":8080"),
+		Addr:           getEnv("ADDR", ":18080"),
 		FrontendOrigin: getEnv("FRONTEND_ORIGIN", "http://localhost:5173"),
 		TempDir:        getEnv("TEMP_DIR", "/tmp/tools-web"),
-		ASRServiceURL:  getEnv("ASR_SERVICE_URL", "http://127.0.0.1:8090"),
+		ASRServiceURL:  getEnv("ASR_SERVICE_URL", "http://127.0.0.1:18081"),
 		FFmpegPath:     getEnv("FFMPEG_PATH", "ffmpeg"),
 		YtDlpPath:      getEnv("YTDLP_PATH", "yt-dlp"),
 		MaxUploadMB:    maxMB,
