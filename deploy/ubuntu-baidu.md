@@ -318,7 +318,89 @@ certbot --nginx -d tools.example.com
 
 ---
 
-## 日常更新命令
+## ASR 模型下载（国内服务器必看）
+
+`/health` 正常不代表模型已就绪。首次转写需下载 Whisper 模型；百度云等环境常无法访问 `huggingface.co`。
+
+### 方案 A：使用 hf-mirror（先试）
+
+```bash
+# 1. 测镜像是否可达
+curl -I --connect-timeout 10 https://hf-mirror.com
+
+# 2. systemd 加环境变量
+vim /etc/systemd/system/tools-asr.service
+```
+
+`[Service]` 中确保有：
+
+```ini
+Environment=WHISPER_MODEL=tiny
+Environment=WHISPER_DEVICE=cpu
+Environment=WHISPER_COMPUTE_TYPE=int8
+Environment=HF_ENDPOINT=https://hf-mirror.com
+```
+
+```bash
+systemctl daemon-reload
+systemctl restart tools-asr
+```
+
+### 方案 B：手动下载到本地目录（推荐，最稳）
+
+在**服务器**上：
+
+```bash
+mkdir -p /opt/tools_web/models
+cd /opt/tools_web/tools-web-backend/asr-service
+source .venv/bin/activate
+pip install huggingface_hub -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+export HF_ENDPOINT=https://hf-mirror.com
+huggingface-cli download Systran/faster-whisper-tiny \
+  --local-dir /opt/tools_web/models/faster-whisper-tiny
+
+deactivate
+```
+
+改 systemd，**模型路径用本地目录**：
+
+```ini
+Environment=WHISPER_MODEL=/opt/tools_web/models/faster-whisper-tiny
+Environment=WHISPER_DEVICE=cpu
+Environment=WHISPER_COMPUTE_TYPE=int8
+Environment=HF_ENDPOINT=https://hf-mirror.com
+```
+
+```bash
+systemctl daemon-reload
+systemctl restart tools-asr
+journalctl -u tools-asr -n 20 --no-pager
+```
+
+验证：
+
+```bash
+ffmpeg -f lavfi -i "sine=frequency=440:duration=3" -ar 16000 -ac 1 /tmp/t.wav -y
+curl -s -X POST http://127.0.0.1:8090/v1/transcribe -F "file=@/tmp/t.wav" -F "language=zh"
+```
+
+### 方案 C：Mac 下载后 scp 到服务器
+
+Mac 上：
+
+```bash
+pip install huggingface_hub
+export HF_ENDPOINT=https://hf-mirror.com
+huggingface-cli download Systran/faster-whisper-tiny --local-dir ./faster-whisper-tiny
+scp -r faster-whisper-tiny root@106.13.115.166:/opt/tools_web/models/
+```
+
+服务器 `WHISPER_MODEL=/opt/tools_web/models/faster-whisper-tiny`，重启 `tools-asr`。
+
+> 模型大小：`tiny`（最快）→ `base` → `small` → `medium`（最慢）。CPU 建议 `tiny` 或 `base`。
+
+---
 
 ### 更新后端
 
@@ -354,7 +436,8 @@ systemctl reload nginx
 | `go: command not found` | `export PATH=$PATH:/usr/local/go/bin` 或重装 Go |
 | `ensurepip is not available` | `apt install -y python3-venv` |
 | `p: command not found` | 应为 `cp .env.example .env` |
-| 转写一直 processing | `journalctl -u tools-asr -f` 看模型是否加载完 |
+| 转写一直 processing / 60% | 多为 Whisper 模型未下载；见下方「ASR 模型下载」 |
+| ASR 500 Network is unreachable | 服务器访问不了 HuggingFace；用 hf-mirror 或手动下载模型 |
 | 上传失败/超时 | 检查 Nginx `client_max_body_size`、安全组 |
 | 端口被占用 | `ss -tlnp` 查看；改 `.env` 的 `ADDR` / `ASR_SERVICE_URL` 及 systemd 中 ASR `--port` |
 
