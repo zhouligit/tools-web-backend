@@ -106,7 +106,7 @@ vim .env
 
 ```env
 ADDR=127.0.0.1:18080
-FRONTEND_ORIGIN=http://你的服务器IP或域名
+FRONTEND_ORIGIN=http://你的服务器IP:18082
 TEMP_DIR=/var/lib/tools-web/tmp
 MAX_UPLOAD_MB=500
 ASR_SERVICE_URL=http://127.0.0.1:18081
@@ -376,4 +376,4 @@ systemctl reload nginx
 - [ ] `curl` 两个 health 接口正常
 - [ ] Nginx 配置 `nginx -t` 通过
 - [ ] 百度云安全组已放行 80
-- [ ] `.env` 中 `FRONTEND_ORIGIN` 与访问地址一致
+- [ ] `.env` 中 `FRONTEND_ORIGIN` 与访问地址一致（**须含端口**，如 `http://106.13.115.166:18082`）
