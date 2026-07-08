@@ -28,6 +28,8 @@ type Task struct {
 	Type         TaskType     `json:"type"`
 	Status       TaskStatus   `json:"status"`
 	Progress     int          `json:"progress"`
+	Stage        string       `json:"stage,omitempty"`
+	DurationSec  float64      `json:"duration_sec,omitempty"`
 	SourceURL    string       `json:"source_url,omitempty"`
 	SourceFile   string       `json:"source_file,omitempty"`
 	Language     string       `json:"language,omitempty"`

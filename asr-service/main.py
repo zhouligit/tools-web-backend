@@ -24,13 +24,30 @@ COMPUTE_TYPE = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
 _model = None
 
 
+def resolve_model_spec(model_spec: str) -> str:
+    if os.path.isdir(model_spec):
+        return model_spec
+    if model_spec.startswith("/") or model_spec.startswith("./"):
+        raise RuntimeError(
+            f"local model path not found: {model_spec}. "
+            "download it first or set WHISPER_MODEL=tiny"
+        )
+    return model_spec
+
+
 def get_model():
     global _model
     if _model is None:
         try:
             from faster_whisper import WhisperModel
-            logger.info("loading whisper model=%s device=%s compute=%s", MODEL_SIZE, DEVICE, COMPUTE_TYPE)
-            _model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type=COMPUTE_TYPE)
+            model_spec = resolve_model_spec(MODEL_SIZE)
+            logger.info(
+                "loading whisper model=%s device=%s compute=%s",
+                model_spec,
+                DEVICE,
+                COMPUTE_TYPE,
+            )
+            _model = WhisperModel(model_spec, device=DEVICE, compute_type=COMPUTE_TYPE)
             logger.info("whisper model loaded")
         except Exception as exc:
             logger.error("failed to load whisper model: %s", exc)

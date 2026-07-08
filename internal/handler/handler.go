@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/find-work/tools-web-backend/internal/export"
 	"github.com/find-work/tools-web-backend/internal/model"
 	"github.com/find-work/tools-web-backend/internal/service"
 	"github.com/gin-gonic/gin"
@@ -83,11 +84,27 @@ func (h *Handler) ListTasks(c *gin.Context) {
 	})
 }
 
+func (h *Handler) GetTaskSRT(c *gin.Context) {
+	task, ok := h.tasks.Get(c.Param("id"))
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+		return
+	}
+	if task.Status != model.TaskCompleted || len(task.Segments) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "task result not ready"})
+		return
+	}
+	c.Header("Content-Type", "text/plain; charset=utf-8")
+	c.Header("Content-Disposition", `attachment; filename="transcript.srt"`)
+	c.String(http.StatusOK, export.ToSRT(task.Segments))
+}
+
 func (h *Handler) Register(r *gin.Engine) {
 	api := r.Group("/api/v1")
 	api.GET("/health", h.Health)
 	api.POST("/tasks/media-to-text", h.CreateTask)
 	api.POST("/tasks/media-to-text/upload", h.UploadTask)
+	api.GET("/tasks/:id/srt", h.GetTaskSRT)
 	api.GET("/tasks/:id", h.GetTask)
 	api.GET("/tasks", h.ListTasks)
 }

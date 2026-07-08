@@ -357,7 +357,7 @@ source .venv/bin/activate
 pip install huggingface_hub -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 export HF_ENDPOINT=https://hf-mirror.com
-huggingface-cli download Systran/faster-whisper-tiny \
+hf download Systran/faster-whisper-tiny \
   --local-dir /opt/tools_web/models/faster-whisper-tiny
 
 deactivate
@@ -392,7 +392,7 @@ Mac 上：
 ```bash
 pip install huggingface_hub
 export HF_ENDPOINT=https://hf-mirror.com
-huggingface-cli download Systran/faster-whisper-tiny --local-dir ./faster-whisper-tiny
+hf download Systran/faster-whisper-tiny --local-dir ./faster-whisper-tiny
 scp -r faster-whisper-tiny root@106.13.115.166:/opt/tools_web/models/
 ```
 

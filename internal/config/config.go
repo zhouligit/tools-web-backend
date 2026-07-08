@@ -15,6 +15,7 @@ type Config struct {
 	FFmpegPath      string
 	YtDlpPath       string
 	MaxUploadMB     int64
+	MaxDurationSec  int
 	TaskRetention   time.Duration
 	BOS             BOSConfig
 }
@@ -29,6 +30,7 @@ type BOSConfig struct {
 
 func Load() Config {
 	maxMB, _ := strconv.ParseInt(getEnv("MAX_UPLOAD_MB", "500"), 10, 64)
+	maxDuration, _ := strconv.Atoi(getEnv("MAX_DURATION_SEC", "7200"))
 	return Config{
 		Addr:            getEnv("ADDR", ":18080"),
 		FrontendOrigins: parseOrigins(getEnv("FRONTEND_ORIGIN", "http://localhost:5173")),
@@ -37,6 +39,7 @@ func Load() Config {
 		FFmpegPath:     getEnv("FFMPEG_PATH", "ffmpeg"),
 		YtDlpPath:      getEnv("YTDLP_PATH", "yt-dlp"),
 		MaxUploadMB:    maxMB,
+		MaxDurationSec: maxDuration,
 		TaskRetention:  24 * time.Hour,
 		BOS: BOSConfig{
 			Enabled:   getEnv("BOS_ENABLED", "false") == "true",

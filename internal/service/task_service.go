@@ -112,10 +112,7 @@ func (s *TaskService) processTask(taskID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
 	defer cancel()
 
-	s.update(taskID, func(t *model.Task) {
-		t.Status = model.TaskProcessing
-		t.Progress = 5
-	})
+	s.updateProgress(taskID, 5, "queued")
 
 	task, ok := s.store.Get(taskID)
 	if !ok {
@@ -132,10 +129,10 @@ func (s *TaskService) processTask(taskID string) {
 	var mediaPath string
 	switch {
 	case task.SourceURL != "":
-		s.update(taskID, func(t *model.Task) { t.Progress = 15 })
+		s.updateProgress(taskID, 15, "downloading")
 		mediaPath, err = s.media.DownloadURL(ctx, taskDir, task.SourceURL)
 	case task.SourceFile != "":
-		s.update(taskID, func(t *model.Task) { t.Progress = 15 })
+		s.updateProgress(taskID, 15, "loading_upload")
 		localName := "upload" + filepath.Ext(filepath.Base(task.SourceFile))
 		mediaPath = filepath.Join(taskDir, localName)
 		if _, err := os.Stat(mediaPath); err != nil {
@@ -158,7 +155,17 @@ func (s *TaskService) processTask(taskID string) {
 		return
 	}
 
-	s.update(taskID, func(t *model.Task) { t.Progress = 40 })
+	s.updateProgress(taskID, 30, "probing")
+	mediaInfo, err := s.media.ValidateMedia(ctx, mediaPath, s.cfg.MaxDurationSec)
+	if err != nil {
+		s.fail(taskID, err)
+		return
+	}
+	s.update(taskID, func(t *model.Task) {
+		t.DurationSec = mediaInfo.DurationSec
+	})
+
+	s.updateProgress(taskID, 40, "extracting_audio")
 	wavPath, err := s.media.ExtractAudio(ctx, taskDir, mediaPath)
 	if err != nil {
 		s.fail(taskID, err)
@@ -172,7 +179,7 @@ func (s *TaskService) processTask(taskID string) {
 		}
 	}
 
-	s.update(taskID, func(t *model.Task) { t.Progress = 60 })
+	s.updateProgress(taskID, 60, "transcribing")
 	text, segments, err := s.asr.Transcribe(wavPath, task.Language)
 	if err != nil {
 		s.fail(taskID, err)
@@ -182,8 +189,17 @@ func (s *TaskService) processTask(taskID string) {
 	s.update(taskID, func(t *model.Task) {
 		t.Status = model.TaskCompleted
 		t.Progress = 100
+		t.Stage = "completed"
 		t.FullText = text
 		t.Segments = segments
+	})
+}
+
+func (s *TaskService) updateProgress(id string, progress int, stage string) {
+	s.store.Update(id, func(t *model.Task) {
+		t.Status = model.TaskProcessing
+		t.Progress = progress
+		t.Stage = stage
 	})
 }
 
@@ -195,6 +211,7 @@ func (s *TaskService) fail(id string, err error) {
 	log.Printf("task %s failed: %v", id, err)
 	s.store.Update(id, func(t *model.Task) {
 		t.Status = model.TaskFailed
+		t.Stage = "failed"
 		t.ErrorMessage = err.Error()
 	})
 }
@@ -213,6 +230,12 @@ func (s *TaskService) HealthChecks() map[string]string {
 		status["ffmpeg"] = "missing"
 	} else {
 		status["ffmpeg"] = "ok"
+	}
+	ffprobe := strings.Replace(s.cfg.FFmpegPath, "ffmpeg", "ffprobe", 1)
+	if !media.CommandExists(ffprobe) && !media.CommandExists("ffprobe") {
+		status["ffprobe"] = "missing"
+	} else {
+		status["ffprobe"] = "ok"
 	}
 	return status
 }
