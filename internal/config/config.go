@@ -12,6 +12,7 @@ type Config struct {
 	FrontendOrigins  []string
 	TempDir          string
 	ASRServiceURL   string
+	OCRServiceURL   string
 	FFmpegPath      string
 	YtDlpPath       string
 	MaxUploadMB     int64
@@ -38,6 +39,7 @@ func Load() Config {
 		FrontendOrigins: parseOrigins(getEnv("FRONTEND_ORIGIN", "http://localhost:5173")),
 		TempDir:        getEnv("TEMP_DIR", "/tmp/tools-web"),
 		ASRServiceURL:  getEnv("ASR_SERVICE_URL", "http://127.0.0.1:18081"),
+		OCRServiceURL:  getEnv("OCR_SERVICE_URL", "http://127.0.0.1:18083"),
 		FFmpegPath:     getEnv("FFMPEG_PATH", "ffmpeg"),
 		YtDlpPath:      getEnv("YTDLP_PATH", "yt-dlp"),
 		MaxUploadMB:    maxMB,

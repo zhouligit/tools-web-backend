@@ -51,7 +51,11 @@ func imageMultipart(t *testing.T, filename string, data []byte, fields map[strin
 
 func TestConvertImageHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	h := &Handler{images: imageproc.NewProcessor(), maxImageBytes: 20 * 1024 * 1024}
+	h := &Handler{
+		images:        imageproc.NewProcessor(),
+		ocr:           mockOCRServer(t, func(w http.ResponseWriter, r *http.Request) {}),
+		maxImageBytes: 20 * 1024 * 1024,
+	}
 	r := gin.New()
 	r.POST("/convert", h.ConvertImage)
 
@@ -84,7 +88,11 @@ func TestConvertImageHandler(t *testing.T) {
 
 func TestCompressImageHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	h := &Handler{images: imageproc.NewProcessor(), maxImageBytes: 20 * 1024 * 1024}
+	h := &Handler{
+		images:        imageproc.NewProcessor(),
+		ocr:           mockOCRServer(t, func(w http.ResponseWriter, r *http.Request) {}),
+		maxImageBytes: 20 * 1024 * 1024,
+	}
 	r := gin.New()
 	r.POST("/compress", h.CompressImage)
 
@@ -108,7 +116,11 @@ func TestCompressImageHandler(t *testing.T) {
 
 func TestConvertImageMissingFile(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	h := &Handler{images: imageproc.NewProcessor(), maxImageBytes: 1024}
+	h := &Handler{
+		images:        imageproc.NewProcessor(),
+		ocr:           mockOCRServer(t, func(w http.ResponseWriter, r *http.Request) {}),
+		maxImageBytes: 1024,
+	}
 	r := gin.New()
 	r.POST("/convert", h.ConvertImage)
 

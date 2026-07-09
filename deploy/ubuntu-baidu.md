@@ -12,7 +12,8 @@
 Nginx ── 静态文件 ← tools-web-frontend/dist
   │
   └── /api/* → Go API 127.0.0.1:18080
-                  └── HTTP → Python ASR 127.0.0.1:18081
+                  ├── HTTP → Python ASR 127.0.0.1:18081
+                  └── HTTP → Python OCR 127.0.0.1:18083
                   └── ffmpeg / yt-dlp / BOS(可选)
 ```
 
@@ -28,6 +29,7 @@ Nginx ── 静态文件 ← tools-web-frontend/dist
 | Nginx（备选） | **18082** | `0.0.0.0` | 是 | 80 已被独占、无法做虚拟主机时使用 |
 | Go API | **18080** | `127.0.0.1` | **否** | 仅 Nginx 反代，安全组不必放行 |
 | Python ASR | **18081** | `127.0.0.1` | **否** | 仅 Go API 调用 |
+| Python OCR | **18083** | `127.0.0.1` | **否** | 仅 Go API 调用 |
 | Vite 开发 | **5173** | `localhost` | 否 | 仅本机开发 |
 
 **与其他 Web 服务共存（推荐）：** 80 端口可以跑多个站点，每个站点一个 `server { server_name xxx; }` 块，互不冲突。
@@ -110,6 +112,7 @@ FRONTEND_ORIGIN=http://你的服务器IP:18082
 TEMP_DIR=/var/lib/tools-web/tmp
 MAX_UPLOAD_MB=500
 ASR_SERVICE_URL=http://127.0.0.1:18081
+OCR_SERVICE_URL=http://127.0.0.1:18083
 FFMPEG_PATH=ffmpeg
 YTDLP_PATH=yt-dlp
 
@@ -145,6 +148,19 @@ deactivate
 
 > 若 venv 失败：先执行 `apt install -y python3-venv python3.10-venv`
 
+### 3.3.1 安装 Python OCR 服务
+
+```bash
+cd /opt/tools_web/tools-web-backend/ocr-service
+rm -rf .venv
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+deactivate
+```
+
+> 首次启动会自动下载 PP-OCR ONNX 模型（约百 MB）。
+
 ### 3.4 注册 systemd — ASR 服务
 
 ```bash
@@ -177,13 +193,35 @@ Environment=WHISPER_COMPUTE_TYPE=float16
 Environment=WHISPER_MODEL=large-v3
 ```
 
+### 3.4.1 注册 systemd — OCR 服务
+
+```bash
+cat > /etc/systemd/system/tools-ocr.service <<'EOF'
+[Unit]
+Description=Tools Web OCR (RapidOCR)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tools_web/tools-web-backend/ocr-service
+Environment=OCR_MAX_EDGE=2048
+Environment=OCR_LANG=ch
+ExecStart=/opt/tools_web/tools-web-backend/ocr-service/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 18083
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
 ### 3.5 注册 systemd — Go API
 
 ```bash
 cat > /etc/systemd/system/tools-api.service <<'EOF'
 [Unit]
 Description=Tools Web Go API
-After=network.target tools-asr.service
+After=network.target tools-asr.service tools-ocr.service
 Requires=tools-asr.service
 
 [Service]
@@ -199,16 +237,18 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable tools-asr tools-api
-systemctl start tools-asr tools-api
+systemctl enable tools-asr tools-ocr tools-api
+systemctl start tools-asr tools-ocr tools-api
 ```
 
 ### 3.6 验证后端
 
 ```bash
-systemctl status tools-asr tools-api
+systemctl status tools-asr tools-ocr tools-api
 curl http://127.0.0.1:18081/health
+curl http://127.0.0.1:18083/health
 curl http://127.0.0.1:18080/api/v1/health
+journalctl -u tools-ocr -n 30 --no-pager
 journalctl -u tools-asr -n 30 --no-pager
 journalctl -u tools-api -n 30 --no-pager
 ```

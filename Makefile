@@ -13,7 +13,7 @@ export PATH := /opt/homebrew/bin:/usr/local/bin:/usr/local/go/bin:$(PATH)
 export GOPROXY ?= https://goproxy.cn,direct
 export GOSUMDB ?= sum.golang.google.cn
 
-.PHONY: check-go dev install-asr build-api run-api run-asr tidy
+.PHONY: check-go dev install-asr build-api run-api run-asr install-ocr run-ocr tidy
 
 check-go:
 	@test -x "$(GO)" || command -v "$(GO)" >/dev/null 2>&1 || { \
@@ -43,4 +43,10 @@ install-asr:
 run-asr:
 	cd asr-service && . .venv/bin/activate && uvicorn main:app --host 127.0.0.1 --port 18081
 
-# 本地联调：终端1 make run-asr，终端2 make dev
+install-ocr:
+	cd ocr-service && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+
+run-ocr:
+	cd ocr-service && . .venv/bin/activate && uvicorn main:app --host 127.0.0.1 --port 18083
+
+# 本地联调：终端1 make run-asr，终端2 make run-ocr，终端3 make dev

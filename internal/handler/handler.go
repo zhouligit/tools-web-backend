@@ -8,28 +8,37 @@ import (
 	"github.com/find-work/tools-web-backend/internal/export"
 	"github.com/find-work/tools-web-backend/internal/imageproc"
 	"github.com/find-work/tools-web-backend/internal/model"
+	"github.com/find-work/tools-web-backend/internal/ocr"
 	"github.com/find-work/tools-web-backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	tasks          *service.TaskService
-	images         *imageproc.Processor
-	maxImageBytes  int64
+	tasks         *service.TaskService
+	images        *imageproc.Processor
+	ocr           *ocr.Client
+	maxImageBytes int64
 }
 
-func New(tasks *service.TaskService, images *imageproc.Processor, maxImageMB int64) *Handler {
+func New(tasks *service.TaskService, images *imageproc.Processor, ocrClient *ocr.Client, maxImageMB int64) *Handler {
 	return &Handler{
 		tasks:         tasks,
 		images:        images,
+		ocr:           ocrClient,
 		maxImageBytes: maxImageMB * 1024 * 1024,
 	}
 }
 
 func (h *Handler) Health(c *gin.Context) {
+	checks := h.tasks.HealthChecks()
+	if err := h.ocr.Health(); err != nil {
+		checks["ocr"] = err.Error()
+	} else {
+		checks["ocr"] = "ok"
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
-		"checks":  h.tasks.HealthChecks(),
+		"checks":  checks,
 		"service": "tools-web-backend",
 	})
 }
@@ -113,6 +122,7 @@ func (h *Handler) Register(r *gin.Engine) {
 	api.POST("/tasks/media-to-text/upload", h.UploadTask)
 	api.POST("/tools/image/convert", h.ConvertImage)
 	api.POST("/tools/image/compress", h.CompressImage)
+	api.POST("/tools/image/ocr", h.OCRImage)
 	api.GET("/tasks/:id/srt", h.GetTaskSRT)
 	api.GET("/tasks/:id", h.GetTask)
 	api.GET("/tasks", h.ListTasks)
