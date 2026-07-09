@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/find-work/tools-web-backend/internal/imageproc"
@@ -68,6 +69,10 @@ func TestConvertImageHandler(t *testing.T) {
 	}
 	if w.Header().Get("Content-Type") != "image/jpeg" {
 		t.Fatalf("unexpected content type: %s", w.Header().Get("Content-Type"))
+	}
+	disposition := w.Header().Get("Content-Disposition")
+	if !strings.Contains(disposition, "filename*=") {
+		t.Fatalf("missing UTF-8 filename in disposition: %s", disposition)
 	}
 	if w.Header().Get("X-Original-Size") == "" || w.Header().Get("X-Output-Size") == "" {
 		t.Fatal("missing size headers")
