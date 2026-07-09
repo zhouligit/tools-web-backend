@@ -6,17 +6,24 @@ import (
 	"strconv"
 
 	"github.com/find-work/tools-web-backend/internal/export"
+	"github.com/find-work/tools-web-backend/internal/imageproc"
 	"github.com/find-work/tools-web-backend/internal/model"
 	"github.com/find-work/tools-web-backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	tasks *service.TaskService
+	tasks          *service.TaskService
+	images         *imageproc.Processor
+	maxImageBytes  int64
 }
 
-func New(tasks *service.TaskService) *Handler {
-	return &Handler{tasks: tasks}
+func New(tasks *service.TaskService, images *imageproc.Processor, maxImageMB int64) *Handler {
+	return &Handler{
+		tasks:         tasks,
+		images:        images,
+		maxImageBytes: maxImageMB * 1024 * 1024,
+	}
 }
 
 func (h *Handler) Health(c *gin.Context) {
@@ -104,6 +111,8 @@ func (h *Handler) Register(r *gin.Engine) {
 	api.GET("/health", h.Health)
 	api.POST("/tasks/media-to-text", h.CreateTask)
 	api.POST("/tasks/media-to-text/upload", h.UploadTask)
+	api.POST("/tools/image/convert", h.ConvertImage)
+	api.POST("/tools/image/compress", h.CompressImage)
 	api.GET("/tasks/:id/srt", h.GetTaskSRT)
 	api.GET("/tasks/:id", h.GetTask)
 	api.GET("/tasks", h.ListTasks)
