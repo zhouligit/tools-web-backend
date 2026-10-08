@@ -8,9 +8,9 @@ import (
 )
 
 type Config struct {
-	Addr             string
-	FrontendOrigins  []string
-	TempDir          string
+	Addr            string
+	FrontendOrigins []string
+	TempDir         string
 	ASRServiceURL   string
 	OCRServiceURL   string
 	FFmpegPath      string
@@ -19,6 +19,7 @@ type Config struct {
 	MaxDurationSec  int
 	MaxImageMB      int64
 	TaskRetention   time.Duration
+	MySQLDSN        string
 	BOS             BOSConfig
 }
 
@@ -46,6 +47,7 @@ func Load() Config {
 		MaxDurationSec: maxDuration,
 		MaxImageMB:     maxImageMB,
 		TaskRetention:  24 * time.Hour,
+		MySQLDSN:       getEnv("MYSQL_DSN", ""),
 		BOS: BOSConfig{
 			Enabled:   getEnv("BOS_ENABLED", "false") == "true",
 			Endpoint:  getEnv("BOS_ENDPOINT", "https://bj.bcebos.com"),

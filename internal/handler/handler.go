@@ -15,14 +15,16 @@ import (
 
 type Handler struct {
 	tasks         *service.TaskService
+	reports       *service.ReportService
 	images        *imageproc.Processor
 	ocr           *ocr.Client
 	maxImageBytes int64
 }
 
-func New(tasks *service.TaskService, images *imageproc.Processor, ocrClient *ocr.Client, maxImageMB int64) *Handler {
+func New(tasks *service.TaskService, reports *service.ReportService, images *imageproc.Processor, ocrClient *ocr.Client, maxImageMB int64) *Handler {
 	return &Handler{
 		tasks:         tasks,
+		reports:       reports,
 		images:        images,
 		ocr:           ocrClient,
 		maxImageBytes: maxImageMB * 1024 * 1024,
@@ -35,6 +37,11 @@ func (h *Handler) Health(c *gin.Context) {
 		checks["ocr"] = err.Error()
 	} else {
 		checks["ocr"] = "ok"
+	}
+	if h.reports == nil {
+		checks["mysql"] = "disabled"
+	} else {
+		checks["mysql"] = "ok"
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
@@ -123,6 +130,8 @@ func (h *Handler) Register(r *gin.Engine) {
 	api.POST("/tools/image/convert", h.ConvertImage)
 	api.POST("/tools/image/compress", h.CompressImage)
 	api.POST("/tools/image/ocr", h.OCRImage)
+	api.POST("/reports", h.CreateReport)
+	api.GET("/reports/:id", h.GetReport)
 	api.GET("/tasks/:id/srt", h.GetTaskSRT)
 	api.GET("/tasks/:id", h.GetTask)
 	api.GET("/tasks", h.ListTasks)

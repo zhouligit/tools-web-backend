@@ -6,6 +6,7 @@ import (
 
 	"github.com/find-work/tools-web-backend/internal/bos"
 	"github.com/find-work/tools-web-backend/internal/config"
+	"github.com/find-work/tools-web-backend/internal/db"
 	"github.com/find-work/tools-web-backend/internal/handler"
 	"github.com/find-work/tools-web-backend/internal/imageproc"
 	"github.com/find-work/tools-web-backend/internal/ocr"
@@ -13,9 +14,12 @@ import (
 	"github.com/find-work/tools-web-backend/internal/store"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	_ = godotenv.Load()
+
 	cfg := config.Load()
 	if err := os.MkdirAll(cfg.TempDir, 0o755); err != nil {
 		log.Fatalf("create temp dir: %v", err)
@@ -28,7 +32,21 @@ func main() {
 
 	st := store.NewTaskStore()
 	taskSvc := service.NewTaskService(cfg, st, bosClient)
-	h := handler.New(taskSvc, imageproc.NewProcessor(), ocr.NewClient(cfg.OCRServiceURL), cfg.MaxImageMB)
+
+	var reportSvc *service.ReportService
+	if cfg.MySQLDSN != "" {
+		sqlDB, err := db.OpenMySQL(cfg.MySQLDSN)
+		if err != nil {
+			log.Fatalf("init mysql: %v", err)
+		}
+		defer sqlDB.Close()
+		reportSvc = service.NewReportService(store.NewReportStore(sqlDB))
+		log.Printf("mysql connected, reports persistence enabled")
+	} else {
+		log.Printf("MYSQL_DSN empty, report APIs disabled")
+	}
+
+	h := handler.New(taskSvc, reportSvc, imageproc.NewProcessor(), ocr.NewClient(cfg.OCRServiceURL), cfg.MaxImageMB)
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{

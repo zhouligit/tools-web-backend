@@ -83,6 +83,16 @@ make dev
 | POST | /api/v1/tasks/media-to-text/upload | 上传文件 |
 | GET | /api/v1/tasks/:id | 查询任务 |
 | GET | /api/v1/tasks | 任务列表 |
+| POST | /api/v1/reports | 创建鉴定报告（需 MySQL） |
+| GET | /api/v1/reports/:id | 查询鉴定报告（公开） |
+
+### MySQL（鉴定报告）
+
+```env
+MYSQL_DSN=user:password@tcp(127.0.0.1:3306)/tools_web?charset=utf8mb4&parseTime=true&loc=Local
+```
+
+启动时自动建表 `reports`。前端独立页：`/report` 填表出码，`/r/:id` 微信扫码查看。
 
 ### 提交 URL
 

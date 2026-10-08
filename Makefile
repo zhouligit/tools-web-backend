@@ -10,8 +10,9 @@ else
 endif
 
 export PATH := /opt/homebrew/bin:/usr/local/bin:/usr/local/go/bin:$(PATH)
-export GOPROXY ?= https://goproxy.cn,direct
-export GOSUMDB ?= sum.golang.google.cn
+# 若 goproxy.cn 403，可改：https://mirrors.aliyun.com/goproxy/,direct
+export GOPROXY ?= https://mirrors.aliyun.com/goproxy/,direct
+export GOSUMDB ?= off
 
 .PHONY: check-go dev install-asr build-api run-api run-asr install-ocr run-ocr tidy
 
