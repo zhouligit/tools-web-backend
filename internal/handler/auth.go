@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/find-work/tools-web-backend/internal/model"
 	"github.com/find-work/tools-web-backend/internal/service"
@@ -103,13 +104,31 @@ func (h *Handler) Me(c *gin.Context) {
 
 func (h *Handler) setSessionCookie(c *gin.Context, sessionID string) {
 	maxAge := int(h.auth.SessionTTL().Seconds())
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(service.SessionCookieName, sessionID, maxAge, "/", "", h.cookieSecure, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     service.SessionCookieName,
+		Value:    sessionID,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   h.cookieSecure,
+		SameSite: http.SameSiteLaxMode,
+	})
 }
 
 func (h *Handler) clearSessionCookie(c *gin.Context) {
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(service.SessionCookieName, "", -1, "/", "", h.cookieSecure, true)
+	// 同时清 Secure true/false，避免配置变更后旧 Cookie 清不掉
+	for _, secure := range []bool{h.cookieSecure, !h.cookieSecure} {
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     service.SessionCookieName,
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			Expires:  time.Unix(0, 0),
+			HttpOnly: true,
+			Secure:   secure,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 }
 
 func (h *Handler) RequireAuth() gin.HandlerFunc {
