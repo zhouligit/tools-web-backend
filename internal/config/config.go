@@ -20,6 +20,8 @@ type Config struct {
 	MaxImageMB      int64
 	TaskRetention   time.Duration
 	MySQLDSN        string
+	SessionTTL      time.Duration
+	CookieSecure    bool
 	BOS             BOSConfig
 }
 
@@ -35,19 +37,25 @@ func Load() Config {
 	maxMB, _ := strconv.ParseInt(getEnv("MAX_UPLOAD_MB", "500"), 10, 64)
 	maxDuration, _ := strconv.Atoi(getEnv("MAX_DURATION_SEC", "7200"))
 	maxImageMB, _ := strconv.ParseInt(getEnv("MAX_IMAGE_MB", "20"), 10, 64)
+	sessionDays, _ := strconv.Atoi(getEnv("SESSION_TTL_DAYS", "7"))
+	if sessionDays <= 0 {
+		sessionDays = 7
+	}
 	return Config{
 		Addr:            getEnv("ADDR", ":18080"),
 		FrontendOrigins: parseOrigins(getEnv("FRONTEND_ORIGIN", "http://localhost:5173")),
-		TempDir:        getEnv("TEMP_DIR", "/tmp/tools-web"),
-		ASRServiceURL:  getEnv("ASR_SERVICE_URL", "http://127.0.0.1:18081"),
-		OCRServiceURL:  getEnv("OCR_SERVICE_URL", "http://127.0.0.1:18083"),
-		FFmpegPath:     getEnv("FFMPEG_PATH", "ffmpeg"),
-		YtDlpPath:      getEnv("YTDLP_PATH", "yt-dlp"),
-		MaxUploadMB:    maxMB,
-		MaxDurationSec: maxDuration,
-		MaxImageMB:     maxImageMB,
-		TaskRetention:  24 * time.Hour,
-		MySQLDSN:       getEnv("MYSQL_DSN", ""),
+		TempDir:         getEnv("TEMP_DIR", "/tmp/tools-web"),
+		ASRServiceURL:   getEnv("ASR_SERVICE_URL", "http://127.0.0.1:18081"),
+		OCRServiceURL:   getEnv("OCR_SERVICE_URL", "http://127.0.0.1:18083"),
+		FFmpegPath:      getEnv("FFMPEG_PATH", "ffmpeg"),
+		YtDlpPath:       getEnv("YTDLP_PATH", "yt-dlp"),
+		MaxUploadMB:     maxMB,
+		MaxDurationSec:  maxDuration,
+		MaxImageMB:      maxImageMB,
+		TaskRetention:   24 * time.Hour,
+		MySQLDSN:        getEnv("MYSQL_DSN", ""),
+		SessionTTL:      time.Duration(sessionDays) * 24 * time.Hour,
+		CookieSecure:    getEnv("COOKIE_SECURE", "false") == "true",
 		BOS: BOSConfig{
 			Enabled:   getEnv("BOS_ENABLED", "false") == "true",
 			Endpoint:  getEnv("BOS_ENDPOINT", "https://bj.bcebos.com"),

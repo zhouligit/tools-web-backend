@@ -17,19 +17,32 @@ type Handler struct {
 	tasks         *service.TaskService
 	reports       *service.ReportService
 	usage         *service.UsageService
+	auth          *service.AuthService
 	images        *imageproc.Processor
 	ocr           *ocr.Client
 	maxImageBytes int64
+	cookieSecure  bool
 }
 
-func New(tasks *service.TaskService, reports *service.ReportService, usage *service.UsageService, images *imageproc.Processor, ocrClient *ocr.Client, maxImageMB int64) *Handler {
+func New(
+	tasks *service.TaskService,
+	reports *service.ReportService,
+	usage *service.UsageService,
+	auth *service.AuthService,
+	images *imageproc.Processor,
+	ocrClient *ocr.Client,
+	maxImageMB int64,
+	cookieSecure bool,
+) *Handler {
 	return &Handler{
 		tasks:         tasks,
 		reports:       reports,
 		usage:         usage,
+		auth:          auth,
 		images:        images,
 		ocr:           ocrClient,
 		maxImageBytes: maxImageMB * 1024 * 1024,
+		cookieSecure:  cookieSecure,
 	}
 }
 
@@ -127,16 +140,30 @@ func (h *Handler) GetTaskSRT(c *gin.Context) {
 func (h *Handler) Register(r *gin.Engine) {
 	api := r.Group("/api/v1")
 	api.GET("/health", h.Health)
-	api.POST("/tasks/media-to-text", h.CreateTask)
-	api.POST("/tasks/media-to-text/upload", h.UploadTask)
-	api.POST("/tools/image/convert", h.ConvertImage)
-	api.POST("/tools/image/compress", h.CompressImage)
-	api.POST("/tools/image/ocr", h.OCRImage)
-	api.POST("/reports", h.CreateReport)
+
+	// 公开：登录注册、扫码看报告（微信）
+	api.POST("/auth/register", h.RegisterUser)
+	api.POST("/auth/login", h.Login)
+	api.POST("/auth/logout", h.Logout)
+	api.GET("/auth/me", h.Me)
 	api.GET("/reports/:id", h.GetReport)
-	api.GET("/tools/:key/usage", h.GetToolUsage)
-	api.POST("/tools/:key/usage", h.IncrementToolUsage)
-	api.GET("/tasks/:id/srt", h.GetTaskSRT)
-	api.GET("/tasks/:id", h.GetTask)
-	api.GET("/tasks", h.ListTasks)
+
+	authed := api.Group("")
+	authed.Use(h.RequireAuth())
+	{
+		authed.POST("/tasks/media-to-text", h.CreateTask)
+		authed.POST("/tasks/media-to-text/upload", h.UploadTask)
+		authed.GET("/tasks/:id/srt", h.GetTaskSRT)
+		authed.GET("/tasks/:id", h.GetTask)
+		authed.GET("/tasks", h.ListTasks)
+
+		authed.POST("/tools/image/convert", h.ConvertImage)
+		authed.POST("/tools/image/compress", h.CompressImage)
+		authed.POST("/tools/image/ocr", h.OCRImage)
+
+		authed.POST("/reports", h.CreateReport)
+
+		authed.GET("/tools/:key/usage", h.GetToolUsage)
+		authed.POST("/tools/:key/usage", h.IncrementToolUsage)
+	}
 }
