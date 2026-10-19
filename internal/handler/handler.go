@@ -16,15 +16,17 @@ import (
 type Handler struct {
 	tasks         *service.TaskService
 	reports       *service.ReportService
+	usage         *service.UsageService
 	images        *imageproc.Processor
 	ocr           *ocr.Client
 	maxImageBytes int64
 }
 
-func New(tasks *service.TaskService, reports *service.ReportService, images *imageproc.Processor, ocrClient *ocr.Client, maxImageMB int64) *Handler {
+func New(tasks *service.TaskService, reports *service.ReportService, usage *service.UsageService, images *imageproc.Processor, ocrClient *ocr.Client, maxImageMB int64) *Handler {
 	return &Handler{
 		tasks:         tasks,
 		reports:       reports,
+		usage:         usage,
 		images:        images,
 		ocr:           ocrClient,
 		maxImageBytes: maxImageMB * 1024 * 1024,
@@ -132,6 +134,8 @@ func (h *Handler) Register(r *gin.Engine) {
 	api.POST("/tools/image/ocr", h.OCRImage)
 	api.POST("/reports", h.CreateReport)
 	api.GET("/reports/:id", h.GetReport)
+	api.GET("/tools/:key/usage", h.GetToolUsage)
+	api.POST("/tools/:key/usage", h.IncrementToolUsage)
 	api.GET("/tasks/:id/srt", h.GetTaskSRT)
 	api.GET("/tasks/:id", h.GetTask)
 	api.GET("/tasks", h.ListTasks)

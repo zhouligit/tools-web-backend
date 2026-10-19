@@ -32,7 +32,8 @@ func OpenMySQL(dsn string) (*sql.DB, error) {
 }
 
 func migrate(db *sql.DB) error {
-	_, err := db.Exec(`
+	stmts := []string{
+		`
 CREATE TABLE IF NOT EXISTS reports (
   id VARCHAR(36) NOT NULL PRIMARY KEY,
   report_type VARCHAR(255) NOT NULL DEFAULT '',
@@ -52,6 +53,19 @@ CREATE TABLE IF NOT EXISTS reports (
   KEY idx_reports_code (report_code),
   KEY idx_reports_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-`)
-	return err
+`,
+		`
+CREATE TABLE IF NOT EXISTS tool_usage (
+  tool_key VARCHAR(64) NOT NULL PRIMARY KEY,
+  use_count BIGINT NOT NULL DEFAULT 0,
+  updated_at DATETIME(3) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+`,
+	}
+	for _, stmt := range stmts {
+		if _, err := db.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -11,8 +11,7 @@
 
 # ===== 环境与密钥 =====
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
 
 # ===== Go =====
@@ -22,10 +21,12 @@ go.work.sum
 coverage.out
 coverage.html
 
-# ===== Python (asr-service) =====
+# ===== Python（asr / ocr）=====
 asr-service/.venv/
 asr-service/venv/
-__pycache__/
+ocr-service/.venv/
+ocr-service/venv/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.egg-info/
@@ -33,10 +34,26 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.Python
 
-# ===== 运行时临时文件 =====
+# ===== 运行时临时文件 / 本地数据 =====
 /tmp/
+/temp/
 *.log
+*.pid
+*.db
+*.sqlite
+*.sqlite3
+
+# Whisper / 模型缓存（若落在仓库目录内）
+**/.cache/
+**/huggingface/
+**/torch/
+
+# ===== 打包临时包 =====
+*.tgz
+*.tar.gz
+*.zip
 
 # ===== 操作系统 =====
 .DS_Store
@@ -51,6 +68,7 @@ desktop.ini
 *.swp
 *.swo
 *~
+.history/
 .project
 .classpath
 .settings/

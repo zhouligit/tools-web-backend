@@ -34,6 +34,7 @@ func main() {
 	taskSvc := service.NewTaskService(cfg, st, bosClient)
 
 	var reportSvc *service.ReportService
+	var usageSvc *service.UsageService
 	if cfg.MySQLDSN != "" {
 		sqlDB, err := db.OpenMySQL(cfg.MySQLDSN)
 		if err != nil {
@@ -41,12 +42,13 @@ func main() {
 		}
 		defer sqlDB.Close()
 		reportSvc = service.NewReportService(store.NewReportStore(sqlDB))
-		log.Printf("mysql connected, reports persistence enabled")
+		usageSvc = service.NewUsageService(store.NewUsageStore(sqlDB))
+		log.Printf("mysql connected, reports/usage persistence enabled")
 	} else {
-		log.Printf("MYSQL_DSN empty, report APIs disabled")
+		log.Printf("MYSQL_DSN empty, report/usage APIs disabled")
 	}
 
-	h := handler.New(taskSvc, reportSvc, imageproc.NewProcessor(), ocr.NewClient(cfg.OCRServiceURL), cfg.MaxImageMB)
+	h := handler.New(taskSvc, reportSvc, usageSvc, imageproc.NewProcessor(), ocr.NewClient(cfg.OCRServiceURL), cfg.MaxImageMB)
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
